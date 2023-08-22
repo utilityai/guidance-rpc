@@ -47,6 +47,22 @@ This should work almost 1-1 with docker
 - the `device` flag in `run` may be different
 - the suffix `,z` on the `--mount` will not be required
 
+#### Latest Release
+
+```bash
+podman run \
+  -p 50051:50051 \
+  -e MODEL_NAME=meta-llama/Llama-2-7b-hf \
+  -e HF_TOKEN=hf_aaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --mount type=bind,src=$XDG_CONFIG_HOME/.cache/huggingface,dst=/root/.cache/huggingface,z \
+  --init \
+  --device=nvidia.com/gpu=all \
+  ghcr.io/utilityai/guidance-rpc:latest
+```
+
+#### From source
+
+
 ```bash
 podman build -t guidance-rpc .
 ```
