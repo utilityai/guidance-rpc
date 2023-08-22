@@ -20,10 +20,12 @@ Run [guidance](https://github.com/guidance-ai/guidance) programs over http in a 
 
 - Support non-hugging-face models (including openai)
 - Support windows (use wsl/docker/podman)
+- CPU support (fixes going this direction are fine, it should not add complexity)
 
 ## Acceptable Contributions
 
 - Improving my awful python
+- Inprove Dockerfile
 - Bug fixes
 - Documentation
 - Tests
@@ -31,6 +33,12 @@ Run [guidance](https://github.com/guidance-ai/guidance) programs over http in a 
 - Increasing the number of guidance programs that can be run
 
 ## Running
+
+### Quickstart
+
+```bash
+podman run -e MODEL_NAME=gpt2 -p 50051:50051 --init --device=nvidia.com/gpu=all ghcr.io/utilityai/guidance-rpc:latest
+```
 
 ### Locally
 
