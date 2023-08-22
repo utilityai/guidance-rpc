@@ -62,7 +62,6 @@ podman run \
 
 #### From source
 
-
 ```bash
 podman build -t guidance-rpc .
 ```
