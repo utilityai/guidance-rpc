@@ -26,6 +26,7 @@ Run [guidance](https://github.com/guidance-ai/guidance) programs over http in a 
 
 - Improving my awful python
 - Inprove Dockerfile
+- Add docker examples
 - Bug fixes
 - Documentation
 - Tests
