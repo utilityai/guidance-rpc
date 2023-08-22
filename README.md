@@ -34,7 +34,7 @@ Run [guidance](https://github.com/guidance-ai/guidance) programs over http in a 
 
 ### Locally
 
-Required `poetry` to be installed.
+Required [poetry](https://python-poetry.org/) to be installed.
 
 ```bash
 poetry install
