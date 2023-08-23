@@ -1,12 +1,12 @@
 import asyncio
-import logging
 from concurrent.futures import ThreadPoolExecutor
 import os
 from types import AsyncGeneratorType
-from typing import AsyncGenerator, Optional, NoReturn
+from typing import AsyncGenerator, Optional, NoReturn, Callable, Awaitable
 
 import grpc
 import grpc_health.v1.health
+from grpc.aio import ServerInterceptor
 from grpc_reflection.v1alpha import reflection
 import guidance
 import transformers.models.llama
@@ -14,9 +14,10 @@ import transformers.models.llama
 import guidance_pb2_grpc
 from guidance_pb2 import HealthCheckResponse, GuidanceResponse
 
-logging.basicConfig(level=logging.NOTSET)
+import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("guidance-rpc")
+logger.setLevel(logging.INFO)
 
 
 def init_blocking(model_name: str | os.PathLike, hf_token: Optional[str] = None) -> guidance.llms.LLM:
@@ -29,10 +30,9 @@ def init_blocking(model_name: str | os.PathLike, hf_token: Optional[str] = None)
     :raises:
         ValueError: If the model name is invalid or the model is already initialized.
     """
-    from transformers import AutoModelForCausalLM
 
     logger.info("Initializing model %s", model_name)
-    hf_model: transformers.PreTrainedModel = AutoModelForCausalLM.from_pretrained(
+    hf_model: transformers.PreTrainedModel = transformers.AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",
         use_auth_token=hf_token,
@@ -77,13 +77,20 @@ class GuidanceServicer(guidance_pb2_grpc.GuidanceServicer):
             raise ValueError("Model not initialized")
 
         logger.info("Received request: %s", request)
-        try:
-            async for x in run(self.llm, request.program):
-                yield GuidanceResponse(text=x)
-        except ValueError as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            raise e
+        async for x in run(self.llm, request.program):
+            yield GuidanceResponse(text=x)
+
+
+class AsyncLoggingInterceptor(ServerInterceptor):
+    async def intercept_service(
+            self,
+            continuation: Callable[
+                [grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]
+            ],
+            handler_call_details: grpc.HandlerCallDetails,
+    ) -> grpc.RpcMethodHandler:
+        logger.info("Received request: %s", handler_call_details.method)
+        return await continuation(handler_call_details)
 
 
 async def main() -> NoReturn:
@@ -92,8 +99,12 @@ async def main() -> NoReturn:
 
     :returns (never): The function never returns.
     """
+    logger.info("Starting server")
     guidance_servicer = GuidanceServicer(llm=None)
-    server = grpc.aio.server(ThreadPoolExecutor(max_workers=10))
+    server = grpc.aio.server(
+        ThreadPoolExecutor(max_workers=10),
+        interceptors=[AsyncLoggingInterceptor()]
+    )
 
     health_servicer = grpc_health.v1.health.aio.HealthServicer()
 
@@ -108,7 +119,6 @@ async def main() -> NoReturn:
     )
 
     guidance_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
-
     guidance_pb2_grpc.add_GuidanceServicer_to_server(guidance_servicer, server)
     reflection.enable_server_reflection(services, server)
 

@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-package com.uiltiyai.guidance;
-
 // Send a guidance program to the guidance service.
 message GuidanceRequest {
   string program = 1;
