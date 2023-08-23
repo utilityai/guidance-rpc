@@ -32,17 +32,32 @@ def init_blocking(model_name: str | os.PathLike, hf_token: Optional[str] = None)
     """
 
     logger.info("Initializing model %s", model_name)
+
+    load_in_8bit: Optional[str] = os.environ.get("LOAD_IN_8BIT", None)
+    repetition_penalty: Optional[str] = os.environ.get("REPETITION_PENALTY", None)
+    top_p: Optional[str] = os.environ.get("TOP_P", None)
+    top_k: Optional[str] = os.environ.get("TOP_K", None)
+    temperature: Optional[str] = os.environ.get("TEMPERATURE", None)
+    device_map: str = os.environ.get("DEVICE_MAP", "auto")
+
     hf_model: transformers.PreTrainedModel = transformers.AutoModelForCausalLM.from_pretrained(
         model_name,
-        device_map="auto",
+        device_map=device_map,
         use_auth_token=hf_token,
-        load_in_8bit=True
+        load_in_8bit=bool(load_in_8bit) if load_in_8bit is not None else None,
+        repetition_penalty=float(repetition_penalty) if repetition_penalty is not None else None,
+        top_p=float(top_p) if top_p is not None else None,
+        top_k=float(top_k) if top_k is not None else None,
+        temperature=float(temperature) if temperature is not None else None,
     )
     logger.info("Finished loading model %s", model_name)
 
+    token_healing = bool(os.environ.get("TOKEN_HEALING", "True"))
+    caching = bool(os.environ.get("CACHING", "True"))
+
     hf_tokenizer = transformers.AutoTokenizer.from_pretrained(model_name, use_auth_token=hf_token)
 
-    return guidance.llms.Transformers(model=hf_model, tokenizer=hf_tokenizer, caching=False)
+    return guidance.llms.Transformers(model=hf_model, tokenizer=hf_tokenizer, caching=caching, token_healing=token_healing)
 
 
 async def init(model_name: str | os.PathLike, hf_token: Optional[str] = None) -> guidance.llms.LLM:
@@ -76,7 +91,7 @@ class GuidanceServicer(guidance_pb2_grpc.GuidanceServicer):
             context.set_details("Model not initialized")
             raise ValueError("Model not initialized")
 
-        logger.info("Received request: %s", request)
+        logger.info("Program: %s", request.program)
         async for x in run(self.llm, request.program):
             yield GuidanceResponse(text=x)
 
@@ -161,7 +176,9 @@ async def run(llm: guidance.llms.LLM, template: str) -> AsyncGeneratorType[str, 
             last = text
             yield text
         else:
-            yield text.removeprefix(last)
+            removed_prefix = text.removeprefix(last)
+            yield removed_prefix
+            print("sending: \"" + removed_prefix + "\"")
             last = text
 
 

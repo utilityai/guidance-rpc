@@ -78,9 +78,9 @@ podman build -t guidance-rpc .
 ```bash
 podman run \
   -p 50051:50051 \
-  -e MODEL_NAME=meta-llama/Llama-2-7b-hf \
-  -e HF_TOKEN=hf_aaaaaaaaaaaaaaaaaaaaaaaaaa \
-  --mount type=bind,src=$XDG_CONFIG_HOME/.cache/huggingface,dst=/root/.cache/huggingface,z \
+  -e MODEL_NAME=TheBloke/Llama-2-7b-Chat-GPTQ \
+  -e CACHE=False \
+  --mount type=bind,src=$HOME/.cache/huggingface,dst=/root/.cache/huggingface,z \
   --init \
   --device=nvidia.com/gpu=all \
   guidance-rpc

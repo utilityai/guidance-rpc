@@ -17,6 +17,12 @@ sentencepiece = "^0.1.99"
 grpcio = "^1.57.0"
 grpcio-health-checking = "^1.57.0"
 grpcio-reflection = "^1.57.0"
+optimum = "^1.12.0"
+auto-gptq = [
+    # Not yet on pypy. This works for me locally + for the container. glhf if you are not running cuda 11.8
+    { url = "https://github.com/PanQiWei/AutoGPTQ/releases/download/v0.4.1/auto_gptq-0.4.1+cu118-cp311-cp311-linux_x86_64.whl", markers = "python_version == '3.11'" },
+    { url = "https://github.com/PanQiWei/AutoGPTQ/releases/download/v0.4.1/auto_gptq-0.4.1+cu118-cp310-cp310-linux_x86_64.whl", markers = "python_version == '3.10'" }
+]
 
 [tool.poetry.dev-dependencies]
 grpcio-tools = "^1.57.0"
